@@ -43,6 +43,7 @@ search c (Node l s (k, a) r) | c == k  = Just a
 -----------------
 --      c)     --
 -----------------
+
 balance :: BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
 balance l n r | size r > 3 * size l    = inv1 l n r
               | size l > 3 * size r    = inv2 l n r
@@ -76,6 +77,38 @@ doubleR :: BTree32 k a -> (k, a) -> BTree32 k a -> BTree32 k a
 doubleR Nil n r                                 = node Nil n r
 doubleR (Node ll _ nl (Node lrl _ nlr lrr)) n r = node (node ll nl lrl) nlr (node lrr n r)
 
+-----------------
+--      d)     --
+-----------------
+
+insert :: Ord k => (k, a) -> BTree32 k a -> BTree32 k a
+insert n Nil = node Nil n Nil
+insert (key, new_data) (l _ (k, a) r) | key == k = node l (key, new_data) r
+                                    | key < k  = balance (insert (key, new_data) l)
+                                    | key > k  = balance (insert (key, new_data) r)
+
+-----------------
+--      e)     --
+-----------------
+
+delRoot :: Ord k => BTree32 k a -> BTree32 k a
+delRoot Nil = Nil
+delRoot (Node Nil _ Nil) = Nil
+delRoot (Node _ l n r) | r == Nil  = l
+                       | l == Nil  = r
+                       | size l < size r = let t = replaceR r in node l (fst t) (snd t)
+                       | size r < size l = let t = replaceL l in node (snd t) (fst t) r
+                       | otherwise = let t = replaceR r in node l (fst t) (snd t)
+
+replaceR :: Ord k => BTree32 k a -> Btree32 k a
+replaceR (Node _ Nil n Nil) = (n, Nil)
+replaceR (Node _ l n r)) | r != Nil = let t = replaceR r in (fst t, node l n (balance (snd t))) 
+                         | r == Nil = (n, Nil)
+
+replaceL :: Ord k => BTree32 k a -> Btree32 k a
+replaceL (Node _ Nil n Nil) = (n, Nil)
+replaceL (Node _ l n r)) | l != Nil = let t = replaceL l in (fst t, node (balance (snd t)) n r) 
+                         | l == Nil = (n, Nil)
 
 -----------------
 --     AUX     --
